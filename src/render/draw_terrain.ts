@@ -83,6 +83,9 @@ function drawDepth(painter: Painter, terrain: Terrain) {
 
         const floatDepth = new Float32Array(nbPixels);
 
+        let minDepth = +Infinity;
+        let maxDepth = -Infinity;
+
         for (let i = 0; i < nbPixels; i += 1) {
             const depthValue = unpack([
                 pixels[i*4],
@@ -93,16 +96,38 @@ function drawDepth(painter: Painter, terrain: Terrain) {
 
             floatDepth[i] = depthValue;
 
-            const remappedDepth = 255 - (240 - (depthValue - 220) * 7);
+            minDepth = Math.min(minDepth, depthValue);
+            maxDepth = Math.max(maxDepth, depthValue);
 
-            canvasImageDataArray[i*4] = 255; //Math.round(floatDepth[i]);
-            canvasImageDataArray[i*4 + 1] = 255; //Math.round(floatDepth[i]);
-            canvasImageDataArray[i*4 + 2] = 255; //Math.round(floatDepth[i]);
-            canvasImageDataArray[i*4 + 3] = remappedDepth;
+            // const remappedDepth = 255 - (240 - (depthValue - 220) * 7);
+
+            // canvasImageDataArray[i*4] = 255; //Math.round(floatDepth[i]);
+            // canvasImageDataArray[i*4 + 1] = 255; //Math.round(floatDepth[i]);
+            // canvasImageDataArray[i*4 + 2] = 255; //Math.round(floatDepth[i]);
+            // canvasImageDataArray[i*4 + 3] = remappedDepth;
+
+            // value is no ~linear in [0, 255]
+            // 0 being the closest
+            // 255 being the furthest
+            const remappedDepth = (depthValue - 240) * 17
+            
+            const naturalPhogDepth = (remappedDepth - 100) * 1.67;
+
+            // @ts-ignore
+            const pitchFactor = window.mapPitch < 60 ? 0 : (window.mapPitch - 60) / 20; 
+
+            // Haze effect
+            // canvasImageDataArray[i*4] = 255;
+            // canvasImageDataArray[i*4 + 1] = 255;
+            // canvasImageDataArray[i*4 + 2] = 255; 
+            // canvasImageDataArray[i*4 + 3] = naturalPhogDepth * pitchFactor; 
+
+            // debug mode
+            canvasImageDataArray[i*4] = naturalPhogDepth * pitchFactor;
+            canvasImageDataArray[i*4 + 1] = naturalPhogDepth * pitchFactor;
+            canvasImageDataArray[i*4 + 2] = naturalPhogDepth * pitchFactor; 
+            canvasImageDataArray[i*4 + 3] = 255;
         }
-
-        // console.log("floatDepth", floatDepth);
-        
 
         ctx.putImageData(canvasImageData, 0, 0);
         

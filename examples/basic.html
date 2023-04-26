@@ -24,6 +24,7 @@
     <script>
 
     window.debug = true
+    window.mapPitch = 0;
 
     const apiKey = "n3xWyMyvvvh0po45JG2D";
 
@@ -43,6 +44,11 @@
 
     map.on("load", () => {
       addTerrain();
+      window.mapPitch = map.getPitch();
+    })
+
+    map.on("pitch", (evt) => {
+      window.mapPitch = map.getPitch();
     })
 
     function addTerrain() {
