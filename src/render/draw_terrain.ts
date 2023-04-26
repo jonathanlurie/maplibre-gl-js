@@ -8,6 +8,18 @@ import {Color} from '@maplibre/maplibre-gl-style-spec';
 import ColorMode from '../gl/color_mode';
 import Terrain from './terrain';
 
+
+function unpack(value) {
+    const bitSh = [1.0 / (256.0 * 256.0 * 256.0), 1.0 / (256.0 * 256.0), 1.0 / 256.0, 1.0];
+    let result = 0.0;
+    for (let i = 0; i < 4; i++) {
+        result += value[i] * bitSh[i];
+    }
+    return result;
+}
+
+  
+
 /**
  * Redraw the Depth Framebuffer
  * @param {Painter} painter - the painter
@@ -30,6 +42,77 @@ function drawDepth(painter: Painter, terrain: Terrain) {
         const uniformValues = terrainDepthUniformValues(posMatrix, terrain.getMeshFrameDelta(painter.transform.zoom));
         program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
     }
+
+    // @ts-ignore
+    if (window.debug) {
+        // console.log('debug0001', terrain.getFramebuffer('depth').framebuffer);    
+
+        // Get the viewport size, which is going to be size of the texture
+        const viewportPixelSize = [painter.width  / devicePixelRatio, painter.height / devicePixelRatio];
+
+        // creating an array to store the 2D image of the texture.
+        const pixels = new Uint8Array(viewportPixelSize[0] * viewportPixelSize[1] * 4);
+
+        // Getting the pixels from the viewport
+        gl.readPixels(0, 0, viewportPixelSize[0], viewportPixelSize[1], gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+
+
+
+
+
+        // @ts-ignore
+        // console.log(document.getElementById('debug-img').src);
+        // console.log(pixels);
+
+        const canvas = document.getElementById('debug-img');
+        // @ts-ignore
+        canvas.width = viewportPixelSize[0];
+        // @ts-ignore
+        canvas.height = viewportPixelSize[1];
+        // @ts-ignore
+        const ctx = canvas.getContext("2d");
+        // @ts-ignore
+        const canvasImageData = ctx.getImageData(0, 0, viewportPixelSize[0], viewportPixelSize[1]);
+        
+        const canvasImageDataArray = canvasImageData.data;
+
+        // canvasImageDataArray.set(pixels);
+
+        const nbPixels = viewportPixelSize[0] * viewportPixelSize[1];
+
+        const floatDepth = new Float32Array(nbPixels);
+
+        for (let i = 0; i < nbPixels; i += 1) {
+            const depthValue = unpack([
+                pixels[i*4],
+                pixels[i*4 + 1],
+                pixels[i*4 + 2],
+                pixels[i*4 + 3],
+            ])
+
+            floatDepth[i] = depthValue;
+
+            const remappedDepth = 255 - (240 - (depthValue - 220) * 7);
+
+            canvasImageDataArray[i*4] = 255; //Math.round(floatDepth[i]);
+            canvasImageDataArray[i*4 + 1] = 255; //Math.round(floatDepth[i]);
+            canvasImageDataArray[i*4 + 2] = 255; //Math.round(floatDepth[i]);
+            canvasImageDataArray[i*4 + 3] = remappedDepth;
+        }
+
+        // console.log("floatDepth", floatDepth);
+        
+
+        ctx.putImageData(canvasImageData, 0, 0);
+        
+    }
+    
+    // console.log('debug01');
+    
+
+    
+    
     context.bindFramebuffer.set(null);
     context.viewport.set([0, 0, painter.width, painter.height]);
 }
