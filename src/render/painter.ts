@@ -61,6 +61,7 @@ import type IndexBuffer from '../gl/index_buffer';
 import type {DepthRangeType, DepthMaskType, DepthFuncType} from '../gl/types';
 import type {ResolvedImage} from '@maplibre/maplibre-gl-style-spec';
 import RenderToTexture from './render_to_texture';
+import { Evented } from '../util/evented';
 
 export type RenderPass = 'offscreen' | 'opaque' | 'translucent';
 
@@ -81,7 +82,7 @@ type PainterOptions = {
  * @param {Canvas} gl an experimental-webgl drawing context
  * @private
  */
-class Painter {
+class Painter extends Evented {
     context: Context;
     transform: Transform;
     renderToTexture: RenderToTexture;
@@ -131,6 +132,7 @@ class Painter {
     terrainFacilitator: {dirty: boolean; matrix: mat4; renderTime: number};
 
     constructor(gl: WebGLRenderingContext, transform: Transform) {
+        super();
         this.context = new Context(gl);
         this.transform = transform;
         this._tileTextures = {};
@@ -399,7 +401,7 @@ class Painter {
         if (this.renderToTexture) {
             this.renderToTexture.prepareForRender(this.style, this.transform.zoom);
             // this is disabled, because render-to-texture is rendering all layers from bottom to top.
-            this.opaquePassCutoff = 0;
+            this.opaquePassCutoff = 0; 
 
             // update coords/depth-framebuffer on camera movement, or tile reloading
             const newTiles = this.style.map.terrain.sourceCache.tilesAfterTime(this.terrainFacilitator.renderTime);
@@ -407,6 +409,7 @@ class Painter {
                 mat4.copy(this.terrainFacilitator.matrix, this.transform.projMatrix);
                 this.terrainFacilitator.renderTime = Date.now();
                 this.terrainFacilitator.dirty = false;
+                
                 drawDepth(this, this.style.map.terrain);
                 drawCoords(this, this.style.map.terrain);
             }
