@@ -8,6 +8,7 @@ import Terrain from './terrain';
 import RenderPool from '../gl/render_pool';
 import Texture from './texture';
 import type StyleLayer from '../style/style_layer';
+import { Event } from '../util/evented';
 
 // lookup table which layers should rendered to texture
 const LAYERS: { [keyof in StyleLayer['type']]?: boolean } = {
@@ -168,6 +169,14 @@ export default class RenderToTexture {
                 }
             }
             drawTerrain(this.painter, this.terrain, this._rttTiles);
+
+            this.painter.fire(new Event("postDrawTerrain", {
+                painter: this.painter,
+                gl: this.painter.context.gl,
+                map: this.painter.style.map,
+                terrain: this.terrain,
+            }))
+
             this._rttTiles = [];
             this.pool.freeAllObjects();
 

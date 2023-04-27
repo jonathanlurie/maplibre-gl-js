@@ -75,6 +75,14 @@ function drawCoords(painter: Painter, terrain: Terrain) {
         program.draw(context, gl.TRIANGLES, depthMode, StencilMode.disabled, colorMode, CullFaceMode.backCCW, uniformValues, terrainData, 'terrain', mesh.vertexBuffer, mesh.indexBuffer, mesh.segments);
         terrain.coordsIndex.push(tile.tileID.key);
     }
+    
+    painter.fire(new Event("postDrawCoord", {
+        painter,
+        gl,
+        map: painter.style.map,
+        terrain,
+    }))
+
     context.bindFramebuffer.set(null);
     context.viewport.set([0, 0, painter.width, painter.height]);
 }
